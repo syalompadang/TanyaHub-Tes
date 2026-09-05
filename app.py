@@ -781,55 +781,6 @@ with tabs[3]:
                 st.button("Sudah Diminum ✓", disabled=True, key=f"med_done_{med['id']}", use_container_width=True)
 
 
-# ==========================================
-# TAB 5: FILOSOFI & AI
-# ==========================================
-with tabs[4]:
-    p_col1, p_col2 = st.columns(2, gap="large")
-    
-    with p_col1:
-        st.markdown("""
-        <div class="clean-card">
-            <div class="metric-label">Prinsip Utama</div>
-            <div style="font-weight: 700; font-size: 15px; color: #0f172a; margin-bottom: 8px;">
-                🛡️ Batasan Etis yang Tidak Bisa Ditawar
-            </div>
-            <p style="font-size: 12px; color: #475569; line-height: 1.6;">
-                TanyaMed <strong>tidak pernah mendiagnosis penyakit</strong> dan <strong>tidak pernah merekomendasikan obat spesifik</strong>.
-                Peran sistem berhenti di <em>"menggali dan menyampaikan"</em>, bukan <em>"memutuskan dan mengobati"</em>.
-            </p>
-        </div>
-        
-        <div class="clean-card">
-            <div class="metric-label">Logika Pengambilan Keputusan</div>
-            <div style="font-weight: 700; font-size: 15px; color: #0f172a; margin-bottom: 8px;">
-                🧠 2 Mode Berpikir AI Bergantian
-            </div>
-            <div style="background-color: #fef2f2; border: 1px solid #fecaca; border-radius: 8px; padding: 10px 14px; margin-bottom: 8px; font-size: 12px; color: #450a0a;">
-                <strong>1. Mode Triase (Deteksi Bahaya):</strong> Mendeteksi tanda kegawatdaruratan (nyeri dada hebat, sesak napas akut, tanda stroke). Begitu terdeteksi, sistem berhenti bertanya dan langsung mengarahkan ke IGD 119.
-            </div>
-            <div style="background-color: #ecfdf5; border: 1px solid #a7f3d0; border-radius: 8px; padding: 10px 14px; font-size: 12px; color: #065f46;">
-                <strong>2. Mode Pre-Anamnesis (Penggalian Riwayat):</strong> Jika aman, menggali 5 elemen riwayat secara bertahap mengikuti ritme percakapan manusia.
-            </div>
-        </div>
-        """, unsafe_allow_html=True)
-
-    with p_col2:
-        st.markdown("""
-        <div class="clean-card">
-            <div class="metric-label">Infrastruktur Sistem</div>
-            <div style="font-weight: 700; font-size: 15px; color: #0f172a; margin-bottom: 8px;">
-                🏛️ Arsitektur Teknis 3 Tingkat
-            </div>
-            <div style="font-size: 12px; color: #475569; line-height: 1.6;">
-                <p><strong>Tier 1 — Model Bahasa (LLM):</strong> Membalas percakapan real-time, menilai triase dan kelengkapan riwayat serta memanggil tools otonom.</p>
-                <p><strong>Tier 2 — Ekstraksi Terstruktur:</strong> Mengonversi teks bebas menjadi 5 field deterministik tanpa kehilangan konteks klinis.</p>
-                <p><strong>Tier 3 — Penyimpanan SATUSEHAT:</strong> Standar HL7 FHIR, enkripsi AES-256, retensi 25 tahun (PMK No. 24/2022) & UU PDP No. 27/2022.</p>
-            </div>
-        </div>
-        """, unsafe_allow_html=True)
-
-
 # --- 7. CLEAN FOOTER ---
 st.write("")
 st.markdown("""
