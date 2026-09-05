@@ -416,8 +416,7 @@ tabs = st.tabs([
     "💬 WhatsApp Pasien",
     f"🏥 Puskesmas Wonorejo ({emergencies_count} Siaga)" if emergencies_count > 0 else "🏥 Puskesmas Wonorejo",
     f"🇮🇩 SATUSEHAT & Poin ({st.session_state.user_points} Pts)",
-    "💊 Kepatuhan Terapi",
-    "📖 Filosofi & AI"
+    "💊 Kepatuhan Terapi"
 ])
 
 
