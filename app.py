@@ -1,5 +1,6 @@
 """
 TanyaMed — Layanan Kesehatan Jarak Jauh Berbasis Percakapan
+Clean Minimalism Design Theme
 Siap di-deploy langsung ke Streamlit Community Cloud (streamlit run app.py)
 """
 
@@ -7,71 +8,215 @@ import streamlit as st
 import datetime
 import hashlib
 import json
-import time
+import os
 
 # --- 1. PAGE CONFIGURATION ---
 st.set_page_config(
-    page_title="TanyaMed — Asisten Triase & Pre-Anamnesis SATUSEHAT",
-    page_icon="🏥",
+    page_title="TanyaMed — Triase & Pre-Anamnesis SATUSEHAT",
+    page_icon="🩺",
     layout="wide",
-    initial_sidebar_state="expanded",
+    initial_sidebar_state="collapsed",
 )
 
-# Custom CSS for WhatsApp feel and medical badges
+# --- 2. CLEAN MINIMALISM CSS ---
 st.markdown("""
 <style>
-    .main-title {
-        font-size: 2rem;
-        font-weight: 700;
-        color: #065F46;
-        margin-bottom: 0.2rem;
+    /* Global Base */
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+    
+    html, body, [class*="css"] {
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+        color: #1e293b;
     }
-    .sub-title {
-        font-size: 1rem;
-        color: #4B5563;
-        margin-bottom: 1.5rem;
+    
+    .stApp {
+        background-color: #f8f9fa;
     }
-    .wa-card {
-        background-color: #EFEAE2;
+    
+    /* Top Header Bar */
+    .top-navbar {
+        background-color: #ffffff;
+        border: 1px solid #e2e8f0;
         border-radius: 12px;
-        padding: 18px;
-        border: 1px solid #D1D5DB;
+        padding: 16px 24px;
+        margin-bottom: 24px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        box-shadow: 0 1px 2px rgba(0,0,0,0.03);
     }
-    .badge-emergency {
-        background-color: #FEE2E2;
-        color: #991B1B;
-        padding: 4px 10px;
-        border-radius: 9999px;
+    
+    /* Cards & Containers */
+    .clean-card {
+        background-color: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-radius: 12px;
+        padding: 20px;
+        margin-bottom: 16px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+    }
+    
+    /* Metrics */
+    .metric-card {
+        background-color: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-radius: 12px;
+        padding: 18px 20px;
+        box-shadow: 0 1px 2px rgba(0,0,0,0.02);
+    }
+    .metric-label {
+        font-size: 11px;
         font-weight: 600;
-        font-size: 0.8rem;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: #64748b;
+        margin-bottom: 4px;
     }
-    .badge-green {
-        background-color: #D1FAE5;
-        color: #065F46;
-        padding: 4px 10px;
+    .metric-value {
+        font-size: 26px;
+        font-weight: 700;
+        color: #0f172a;
+        line-height: 1.2;
+    }
+    .metric-delta {
+        font-size: 11px;
+        font-weight: 500;
+        color: #10b981;
+        margin-top: 6px;
+    }
+    .metric-delta-danger {
+        font-size: 11px;
+        font-weight: 500;
+        color: #ff4b4b;
+        margin-top: 6px;
+    }
+    
+    /* Pills & Badges */
+    .pill-badge {
+        display: inline-flex;
+        align-items: center;
+        padding: 2px 8px;
         border-radius: 9999px;
-        font-weight: 600;
-        font-size: 0.8rem;
+        font-size: 10px;
+        font-weight: 700;
+        letter-spacing: 0.03em;
+        text-transform: uppercase;
     }
-    .card-faskes {
-        background-color: #FFFFFF;
-        border: 1px solid #E5E7EB;
-        border-radius: 8px;
-        padding: 14px;
+    .pill-emergency {
+        background-color: #fee2e2;
+        color: #dc2626;
+        border: 1px solid #fca5a5;
+    }
+    .pill-green {
+        background-color: #ecfdf5;
+        color: #059669;
+        border: 1px solid #a7f3d0;
+    }
+    .pill-neutral {
+        background-color: #f1f5f9;
+        color: #475569;
+        border: 1px solid #e2e8f0;
+    }
+    
+    /* Chat Bubbles */
+    .chat-bubble-user {
+        background-color: #1e293b;
+        color: #ffffff;
+        border-radius: 12px 12px 2px 12px;
+        padding: 12px 16px;
         margin-bottom: 12px;
-        box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        max-width: 80%;
+        margin-left: auto;
+        font-size: 13px;
+        line-height: 1.5;
+        box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+    }
+    .chat-bubble-bot {
+        background-color: #ffffff;
+        color: #1e293b;
+        border: 1px solid #e2e8f0;
+        border-radius: 12px 12px 12px 2px;
+        padding: 12px 16px;
+        margin-bottom: 12px;
+        max-width: 80%;
+        margin-right: auto;
+        font-size: 13px;
+        line-height: 1.5;
+        box-shadow: 0 1px 2px rgba(0,0,0,0.02);
+    }
+    .chat-bubble-emergency {
+        background-color: #fef2f2;
+        color: #450a0a;
+        border: 1px solid #fecaca;
+        border-radius: 12px 12px 12px 2px;
+        padding: 14px 18px;
+        margin-bottom: 12px;
+        max-width: 85%;
+        margin-right: auto;
+        font-size: 13px;
+        line-height: 1.5;
+    }
+
+    /* Streamlit Widget Overrides */
+    div.stButton > button {
+        border-radius: 6px;
+        font-size: 13px;
+        font-weight: 500;
+        border: 1px solid #e2e8f0;
+        transition: all 0.15s ease;
+    }
+    div.stButton > button:hover {
+        border-color: #cbd5e1;
+        background-color: #f8fafc;
+    }
+    
+    /* Primary buttons */
+    button[kind="primary"] {
+        background-color: #ff4b4b !important;
+        color: #ffffff !important;
+        border: none !important;
+        box-shadow: 0 1px 3px rgba(255, 75, 75, 0.2) !important;
+    }
+    button[kind="primary"]:hover {
+        background-color: #e03a3a !important;
+    }
+
+    /* Clean navigation tabs */
+    .stTabs [data-baseweb="tab-list"] {
+        gap: 8px;
+        background-color: #ffffff;
+        padding: 6px;
+        border-radius: 10px;
+        border: 1px solid #e2e8f0;
+    }
+    .stTabs [data-baseweb="tab"] {
+        border-radius: 6px;
+        padding: 8px 16px;
+        font-size: 13px;
+        font-weight: 500;
+        color: #475569;
+    }
+    .stTabs [aria-selected="true"] {
+        background-color: #f1f5f9 !important;
+        color: #ff4b4b !important;
+        font-weight: 600;
     }
 </style>
 """, unsafe_allow_html=True)
 
-# --- 2. INITIALIZE SESSION STATE ---
+# --- 3. SESSION STATE INITIALIZATION ---
 if "user_points" not in st.session_state:
     st.session_state.user_points = 20
 if "user_badges" not in st.session_state:
     st.session_state.user_badges = ["Pemula Sehat"]
 if "chat_history" not in st.session_state:
     st.session_state.chat_history = [
-        {"role": "assistant", "content": "Halo! Saya **TanyaMed** 👋 Asisten triase & pre-anamnesis kesehatan Anda.\n\nBoleh ceritakan keluhan apa yang sedang kamu rasakan saat ini?"}
+        {
+            "role": "assistant",
+            "type": "normal",
+            "time": "08:00 WIB",
+            "content": "Halo! Saya **TanyaMed** 👋 Asisten triase & pre-anamnesis kesehatan Anda.\n\nBoleh ceritakan apa keluhan yang sedang kamu rasakan saat ini?"
+        }
     ]
 if "faskes_records" not in st.session_state:
     st.session_state.faskes_records = [
@@ -80,41 +225,52 @@ if "faskes_records" not in st.session_state:
             "timestamp": "08:15 WIB",
             "type": "non_emergency",
             "patient_name": "Pasien Anonim #42",
-            "keluhan": "Sakit kepala berdenyut bagian belakang",
-            "lokasi": "Belakang kepala",
+            "keluhan": "Sakit kepala berdenyut bagian belakang sudah 2 hari",
+            "lokasi": "Belakang kepala & tengkuk",
             "durasi": "2 hari",
             "karakteristik": "Memberat saat kurang tidur dan menatap layar",
             "obat_mandiri": "Parasetamol 500mg, agak membaik",
             "status": "Menunggu di Ruang Tunggu Poli Umum",
-            "hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+            "hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "verified": True,
+            "doctor_note": "Anamnesis dasar terkonfirmasi. Periksa tekanan darah dan palpasi leher."
         },
         {
             "id": "TM-20260905-02",
             "timestamp": "08:28 WIB",
             "type": "emergency",
             "patient_name": "Pasien Anonim #88",
-            "keluhan": "Nyeri dada hebat menjalar ke lengan kiri & sesak napas",
-            "lokasi": "Dada kiri",
+            "keluhan": "Nyeri dada hebat menjalar ke lengan kiri & sesak napas berat",
+            "lokasi": "Dada kiri substernal",
             "durasi": "Sejak 1 jam lalu",
-            "karakteristik": "Sensasi tertindih beban berat",
-            "obat_mandiri": "Belum ada",
-            "alasan": "Berpotensi Sindroma Koroner Akut / Kondisi Kardiovaskular Akut",
-            "status": "⚠️ SIAGA IGD — Pasien dalam perjalanan",
-            "hash": "8f434346648f6b96df89dda901c5176b10a6d83961dd3c1ac88b59b2dc327aa4"
+            "karakteristik": "Sensasi tertindih beban berat, keringat dingin",
+            "obat_mandiri": "Belum minum obat",
+            "alasan": "Berpotensi Sindroma Koroner Akut (SKA) / Kegawatan Kardiovaskular Akut",
+            "status": "⚠️ SIAGA IGD — Pasien dalam perjalanan via Ambulans 119",
+            "hash": "8f434346648f6b96df89dda901c5176b10a6d83961dd3c1ac88b59b2dc327aa4",
+            "verified": True,
+            "doctor_note": "Persiapkan bed resusitasi IGD, mesin EKG 12-lead, dan akses kanul oksigen."
         }
     ]
 if "medications" not in st.session_state:
     st.session_state.medications = [
-        {"name": "Amlodipine 5mg", "aturan": "1x sehari (Pagi)", "diminum": True, "waktu": "07:00 WIB"},
-        {"name": "Metformin 500mg", "aturan": "2x sehari (Setelah makan)", "diminum": False, "waktu": "12:30 WIB"},
+        {"id": "med-1", "name": "Amlodipine", "dosage": "5mg", "schedule": "1x sehari (Pagi sebelum makan)", "taken": True, "time": "07:15 WIB"},
+        {"id": "med-2", "name": "Metformin", "dosage": "500mg", "schedule": "2x sehari (Bersama makan)", "taken": False, "time": None},
+        {"id": "med-3", "name": "Amoxicillin Trihydrate (Antibiotik)", "dosage": "500mg", "schedule": "3x sehari (Tiap 8 jam — Wajib dihabiskan)", "taken": False, "time": None},
     ]
 
-# --- 3. HELPER FUNCTIONS ---
+# --- 4. CORE CLINICAL AI & TRIAGE LOGIC ---
+EMERGENCY_KEYWORDS = [
+    "nyeri dada", "sesak napas", "sesak nafas", "tidak bisa napas", "sulit bernapas",
+    "stroke", "mati rasa sebelah", "pingsan", "tidak sadar", "kejang",
+    "muntah darah", "perdarahan hebat", "pendarahan hebat", "tertindih beban berat di dada"
+]
+
 def generate_sha256(data_dict):
     data_str = json.dumps(data_dict, sort_keys=True)
     return hashlib.sha256(data_str.encode()).hexdigest()
 
-def check_badge(points):
+def update_badges(points):
     badges = ["Pemula Sehat"]
     if points >= 30:
         badges.append("Pasien Siaga")
@@ -122,376 +278,574 @@ def check_badge(points):
         badges.append("Ahli Riwayat")
     return badges
 
-EMERGENCY_KEYWORDS = [
-    "nyeri dada", "sesak napas", "sesak nafas", "tidak bisa napas", "stroke",
-    "mati rasa sebelah", "pingsan", "tidak sadar", "kejang", "muntah darah",
-    "pendarahan hebat", "perdarahan hebat", "ditindih beban berat di dada"
-]
-
-def analyze_intent_and_reply(user_message, chat_history):
-    msg_lower = user_message.lower()
+def process_chat_message(user_text):
+    now_str = datetime.datetime.now().strftime("%H:%M WIB")
+    lower = user_text.lower()
     
-    # 1. Triase Darurat Check (Rule of ethics: No delay in danger)
-    is_emergency = any(kw in msg_lower for kw in EMERGENCY_KEYWORDS)
+    # Check Emergency (Triase Merah)
+    is_emergency = any(kw in lower for kw in EMERGENCY_KEYWORDS)
     
     if is_emergency:
         reply = (
             "⚠️ **PERINGATAN KONDISI DARURAT MEDIS**\n\n"
-            "Gejala yang kamu sebutkan berpotensi merupakan kondisi gawat darurat yang membutuhkan penanganan medis segera.\n\n"
-            "🚨 **Tindakan yang harus dilakukan:**\n"
-            "- Segera menuju ke **IGD (Instalasi Gawat Darurat) terdekat** atau hubungi **Ambulans / 119**.\n"
+            "Gejala yang kamu sebutkan berpotensi merupakan kondisi gawat darurat (triase merah) "
+            "yang membutuhkan penanganan medis segera.\n\n"
+            "🚨 **Tindakan Segera:**\n"
+            "- Segera menuju ke **IGD terdekat** atau hubungi ambulans **119**.\n"
             "- Jangan mengemudi sendiri.\n"
             "- Istirahat dengan posisi setengah duduk.\n\n"
-            "📡 *Data rujukan darurat ini sudah otomatis diteruskan ke Puskesmas Wonorejo & IGD agar tim medis bersiaga.*"
+            "📡 *Data rujukan darurat ini telah otomatis diteruskan ke IGD Puskesmas Wonorejo agar tim medis segera bersiaga.*"
         )
-        record = {
-            "id": f"TM-{datetime.datetime.now().strftime('%Y%m%d-%H%M%S')}",
-            "timestamp": datetime.datetime.now().strftime("%H:%M WIB"),
+        rec = {
+            "id": f"TM-{datetime.datetime.now().strftime('%Y%m%d')}-{len(st.session_state.faskes_records)+1:02d}",
+            "timestamp": now_str,
             "type": "emergency",
             "patient_name": f"Pasien WhatsApp #{len(st.session_state.faskes_records)+1}",
-            "keluhan": user_message,
-            "lokasi": "Area vital (Dada / Pernapasan / Saraf)",
-            "durasi": "Akut / Baru saja dilaporkan",
-            "karakteristik": "Tanda bahaya kardiovaskular / kegawatan",
-            "obat_mandiri": "Belum / tidak dianjurkan tanpa resep",
-            "alasan": "Deteksi tanda kegawatdaruratan triase merah (IGD)",
-            "status": "⚠️ SIAGA IGD — Pasien Diarahkan ke Faskes Terdekat",
+            "keluhan": user_text,
+            "lokasi": "Vital / Kardiovaskular / Pernapasan",
+            "durasi": "Akut (Baru Saja Terlaporkan)",
+            "karakteristik": "Tanda bahaya kegawatan memerlukan penanganan darurat",
+            "obat_mandiri": "Belum / Tidak disarankan mandiri",
+            "alasan": "Deteksi tanda bahaya kardiovaskular / kegawatan napas / defisit neurologis akut",
+            "status": "⚠️ SIAGA IGD — Diarahkan Segera ke IGD 119",
+            "verified": False,
+            "doctor_note": ""
         }
-        record["hash"] = generate_sha256(record)
-        st.session_state.faskes_records.insert(0, record)
+        rec["hash"] = generate_sha256(rec)
+        st.session_state.faskes_records.insert(0, rec)
         return reply, "emergency"
 
-    # 2. Non-emergency Pre-anamnesis Conversation Flow
-    # Count turns to simulate natural 5 elements extraction
-    turn_count = len([m for m in chat_history if m["role"] == "user"])
+    # Pre-anamnesis Conversation Loop
+    user_turns = len([m for m in st.session_state.chat_history if m["role"] == "user"])
     
-    if turn_count == 1:
+    if user_turns == 1:
         reply = (
-            "Baik, saya catat keluhan utamamu. Di mana **lokasi persisnya** rasa tidak nyaman itu terasa, "
-            "dan sudah berlangsung berapa lama?"
+            "Baik, saya catat keluhan utamamu. Di mana **lokasi persisnya** rasa sakit atau tidak nyaman tersebut terasa, "
+            "dan sudah berapa lama berlangsung?"
         )
-        return reply, "in_progress"
-    elif turn_count == 2:
+        return reply, "normal"
+    elif user_turns == 2:
         reply = (
-            "Terima kasih informasinya. Apakah ada hal yang membuat keluhanmu **terasa semakin berat** "
-            "(misalnya saat kelelahan, posisi tertentu) atau hal yang membuatnya membaik?"
+            "Terima kasih informasinya. Apakah ada faktor yang membuat keluhan ini **terasa lebih berat** "
+            "(misal saat aktivitas atau posisi tertentu), atau hal yang membuatnya mereda?"
         )
-        return reply, "in_progress"
-    elif turn_count == 3:
+        return reply, "normal"
+    elif user_turns == 3:
         reply = (
-            "Dicatat. Apakah kamu **sudah sempat minum obat sendiri** (misalnya warung atau resep lama), "
-            "atau melakukan penanganan mandiri sebelum ini?"
+            "Dicatat. Apakah kamu **sudah sempat meminum obat mandiri** (seperti obat warung atau herbal), "
+            "dan bagaimana hasilnya setelah minum obat tersebut?"
         )
-        return reply, "in_progress"
+        return reply, "normal"
     else:
         # Pre-anamnesis complete
         st.session_state.user_points += 10
-        st.session_state.user_badges = check_badge(st.session_state.user_points)
+        st.session_state.user_badges = update_badges(st.session_state.user_points)
         
         reply = (
-            "Terima kasih banyak! 5 elemen riwayat gejala kamu sudah **lengkap tercatat dan terenkripsi** ✅\n\n"
+            "Terima kasih banyak! 5 elemen riwayat keluhan kamu sudah **lengkap tercatat dan terenkripsi** ✅\n\n"
             "📋 **Ringkasan Pre-Anamnesis Anda:**\n"
-            f"- **Keluhan Utama:** {user_message}\n"
-            "- **Status:** Diteruskan ke Faskes Tujuan (Puskesmas Wonorejo)\n"
+            f"- **Keluhan Utama:** {user_text}\n"
+            "- **Status:** Diteruskan ke Antrean Poli Puskesmas Wonorejo\n"
             "- **SATUSEHAT:** Rekam Medis Elektronik tersinkronisasi (PMK No. 24/2022)\n\n"
-            "🎁 **Kamu mendapatkan +10 Poin Sehat!** Total poin: "
-            f"**{st.session_state.user_points} poin**.\n"
-            "Informasi ini akan sangat membantu dokter saat konsultasi tatap muka tanpa pengulangan pertanyaan dasar."
+            f"🎁 **Kamu mendapatkan +10 Poin Sehat!** Total poin: **{st.session_state.user_points} Pts**.\n"
+            "Dokter di faskes dapat langsung meninjau data ini tanpa perlu mengulang pertanyaan dasar dari nol."
         )
-        record = {
-            "id": f"TM-{datetime.datetime.now().strftime('%Y%m%d-%H%M%S')}",
-            "timestamp": datetime.datetime.now().strftime("%H:%M WIB"),
+        rec = {
+            "id": f"TM-{datetime.datetime.now().strftime('%Y%m%d')}-{len(st.session_state.faskes_records)+1:02d}",
+            "timestamp": now_str,
             "type": "non_emergency",
             "patient_name": f"Pasien WhatsApp #{len(st.session_state.faskes_records)+1}",
-            "keluhan": user_message,
-            "lokasi": "Tercatat dalam percakapan",
+            "keluhan": user_text,
+            "lokasi": "Kepala / area keluhan",
             "durasi": "Beberapa hari terakhir",
-            "karakteristik": "Terdokumentasi dalam transkrip",
+            "karakteristik": "Telah digali dalam pre-anamnesis",
             "obat_mandiri": "Penanganan mandiri awal",
             "status": "Tersimpan di Sistem Antrean Poli",
+            "verified": False,
+            "doctor_note": ""
         }
-        record["hash"] = generate_sha256(record)
-        st.session_state.faskes_records.insert(0, record)
+        rec["hash"] = generate_sha256(rec)
+        st.session_state.faskes_records.insert(0, rec)
         return reply, "complete"
 
-# --- 4. SIDEBAR NAVIGATION ---
-with st.sidebar:
-    st.image("https://images.unsplash.com/photo-1584515979956-d9f6e5d09982?w=200&auto=format&fit=crop&q=80", width=80)
-    st.markdown("### **TanyaMed Platform**")
-    st.caption("Conversational Triage & Pre-Anamnesis Bridge to SATUSEHAT")
-    
-    st.markdown("---")
-    menu = st.radio(
-        "Pilih Sudut Pandang Stakeholder:",
-        [
-            "💬 WhatsApp Pasien (Simulasi Chat)",
-            "🏥 Puskesmas Wonorejo (Faskes Intake)",
-            "🇮🇩 SATUSEHAT & Gamifikasi",
-            "💊 Kepatuhan Terapi Pasca-Konsultasi",
-            "🚀 Siap Push ke Streamlit (Deployment)",
-            "📖 Filosofi & Arsitektur TanyaMed"
-        ]
-    )
-    
-    st.markdown("---")
-    st.markdown("#### **Status Pasien Anda**")
-    col1, col2 = st.columns(2)
-    col1.metric("Poin Sehat", f"{st.session_state.user_points} Pts")
+
+# --- 5. TOP NAVBAR (CLEAN MINIMALISM) ---
+col_logo, col_stat = st.columns([2.5, 1.5])
+
+with col_logo:
+    st.markdown("""
+    <div style="display: flex; align-items: center; gap: 12px;">
+        <div style="width: 38px; height: 38px; background-color: #ff4b4b; border-radius: 8px; display: flex; align-items: center; justify-content: center; color: white; font-size: 20px;">
+            🩺
+        </div>
+        <div>
+            <div style="display: flex; align-items: center; gap: 8px;">
+                <span style="font-weight: 700; font-size: 18px; color: #0f172a; letter-spacing: -0.02em;">TanyaMed</span>
+                <span class="pill-badge pill-neutral">SATUSEHAT READY</span>
+            </div>
+            <p style="font-size: 11px; color: #64748b; margin: 0; font-weight: 500;">
+                Layanan Percakapan Triase & Pre-Anamnesis WhatsApp
+            </p>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+
+with col_stat:
+    emergencies_count = len([r for r in st.session_state.faskes_records if r["type"] == "emergency"])
     current_badge = st.session_state.user_badges[-1]
-    col2.markdown(f"**Lencana:**\n`{current_badge}`")
     
-    st.progress(min(1.0, st.session_state.user_points / 60.0))
-    st.caption(f"Target level berikutnya: 60 Poin (Ahli Riwayat)")
+    st.markdown(f"""
+    <div style="display: flex; align-items: center; justify-content: flex-end; gap: 12px; height: 100%;">
+        <div style="background-color: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 6px 14px; font-size: 12px;">
+            <span style="color: #64748b;">Lencana:</span>
+            <strong style="color: #0f172a;">{current_badge}</strong>
+            <span style="color: #cbd5e1; margin: 0 6px;">|</span>
+            <strong style="color: #10b981;">{st.session_state.user_points} Pts</strong>
+        </div>
+        <div style="background-color: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 6px 12px; font-size: 11px; font-weight: 600; color: #059669; display: flex; align-items: center; gap: 6px;">
+            <span style="width: 7px; height: 7px; border-radius: 50%; background-color: #10b981; display: inline-block;"></span>
+            Puskesmas Wonorejo Live
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
 
-    if st.button("🔄 Reset Sesi Simulasi"):
-        st.session_state.chat_history = [
-            {"role": "assistant", "content": "Halo! Saya **TanyaMed** 👋 Asisten triase & pre-anamnesis kesehatan Anda.\n\nBoleh ceritakan keluhan apa yang sedang kamu rasakan saat ini?"}
-        ]
-        st.rerun()
+st.write("") # Spacer
 
-# --- 5. MAIN CONTENT PAGES ---
+# --- 6. NAVIGATION TABS ---
+tabs = st.tabs([
+    "💬 WhatsApp Pasien",
+    f"🏥 Puskesmas Wonorejo ({emergencies_count} Siaga)" if emergencies_count > 0 else "🏥 Puskesmas Wonorejo",
+    f"🇮🇩 SATUSEHAT & Poin ({st.session_state.user_points} Pts)",
+    "💊 Kepatuhan Terapi",
+    "📖 Filosofi & AI"
+])
 
-if "WhatsApp Pasien" in menu:
-    st.markdown('<div class="main-title">💬 Simulasi WhatsApp TanyaMed</div>', unsafe_allow_html=True)
-    st.markdown('<div class="sub-title">Pengalaman pasien berinteraksi dengan AI Triase & Pre-Anamnesis 24/7</div>', unsafe_allow_html=True)
+
+# ==========================================
+# TAB 1: WHATSAPP PASIEN
+# ==========================================
+with tabs[0]:
+    # Notice Bar
+    st.markdown("""
+    <div class="clean-card" style="padding: 12px 18px; margin-bottom: 20px;">
+        <div style="display: flex; align-items: flex-start; gap: 12px;">
+            <span style="font-size: 18px;">🛡️</span>
+            <div>
+                <div class="metric-label" style="margin-bottom: 2px;">Standar Etis Klinis</div>
+                <div style="font-size: 12px; color: #334155; line-height: 1.5;">
+                    <strong>Layanan Pre-Anamnesis TanyaMed:</strong> Sistem tidak mendiagnosis dan tidak merekomendasikan obat spesifik.
+                    Riwayat keluhan dienkripsi (AES-256) dan otomatis disalurkan ke <strong>Puskesmas Wonorejo</strong> serta <strong>SATUSEHAT Kemenkes RI</strong>.
+                </div>
+            </div>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
     
-    col_chat, col_info = st.columns([2.2, 1])
+    col_chat, col_side = st.columns([7, 5], gap="large")
     
     with col_chat:
-        st.markdown('<div class="wa-card">', unsafe_allow_html=True)
-        st.caption("🟢 **TanyaMed Bot Resmi WhatsApp** — Terverifikasi Kemenkes SATUSEHAT")
+        st.markdown("""
+        <div style="background-color: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px 12px 0 0; padding: 14px 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #f1f5f9;">
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <div style="width: 32px; height: 32px; background-color: #f1f5f9; border-radius: 8px; display: flex; align-items: center; justify-content: center; color: #ff4b4b; font-size: 16px;">
+                    🩺
+                </div>
+                <div>
+                    <div style="font-size: 13px; font-weight: 600; color: #0f172a;">TanyaMed Official</div>
+                    <div style="font-size: 11px; color: #64748b;">Triase AI • 24/7 Aktif</div>
+                </div>
+            </div>
+            <span class="pill-badge pill-green">VERIFIED WA</span>
+        </div>
+        """, unsafe_allow_html=True)
         
-        # Display chat
-        for msg in st.session_state.chat_history:
-            if msg["role"] == "user":
-                with st.chat_message("user"):
-                    st.write(msg["content"])
-            else:
-                with st.chat_message("assistant", avatar="🩺"):
-                    st.write(msg["content"])
-        
-        st.markdown('</div>', unsafe_allow_html=True)
-        
-        # Quick prompts
-        st.caption("⚡ Pilih Contoh Keluhan Cepat:")
-        c1, c2, c3 = st.columns(3)
+        # Chat container
+        chat_container = st.container(height=420)
+        with chat_container:
+            st.markdown("""
+            <div style="text-align: center; margin: 8px 0 16px 0;">
+                <span style="background-color: #ffffff; border: 1px solid #e2e8f0; color: #64748b; font-size: 11px; padding: 4px 12px; border-radius: 6px;">
+                    🔒 Komunikasi terenkripsi AES-256 disalurkan ke Puskesmas Wonorejo & SATUSEHAT
+                </span>
+            </div>
+            """, unsafe_allow_html=True)
+            
+            for msg in st.session_state.chat_history:
+                is_user = msg["role"] == "user"
+                m_type = msg.get("type", "normal")
+                
+                if is_user:
+                    st.markdown(f"""
+                    <div class="chat-bubble-user">
+                        {msg["content"]}
+                        <div style="text-align: right; font-size: 10px; color: #94a3b8; margin-top: 4px;">{msg.get('time', '')} ✓✓</div>
+                    </div>
+                    """, unsafe_allow_html=True)
+                else:
+                    if m_type == "emergency":
+                        st.markdown(f"""
+                        <div class="chat-bubble-emergency">
+                            <div style="font-weight: 700; font-size: 11px; color: #dc2626; margin-bottom: 4px;">🚨 TRIASE MERAH (DARURAT IGD)</div>
+                            {msg["content"].replace(chr(10), '<br>')}
+                            <div style="font-size: 10px; color: #991b1b; margin-top: 6px;">{msg.get('time', '')}</div>
+                        </div>
+                        """, unsafe_allow_html=True)
+                    else:
+                        st.markdown(f"""
+                        <div class="chat-bubble-bot">
+                            <div style="font-weight: 700; font-size: 11px; color: #0f172a; margin-bottom: 4px;">TanyaMed Triage</div>
+                            {msg["content"].replace(chr(10), '<br>')}
+                            <div style="font-size: 10px; color: #94a3b8; margin-top: 6px;">{msg.get('time', '')}</div>
+                        </div>
+                        """, unsafe_allow_html=True)
+
+        # Quick symptom buttons
+        st.markdown("<div class='metric-label' style='margin-top: 8px;'>⚡ Contoh Keluhan Cepat:</div>", unsafe_allow_html=True)
+        qc1, qc2, qc3 = st.columns(3)
         quick_msg = None
-        if c1.button("⚠️ Nyeri Dada & Sesak"):
-            quick_msg = "Dada saya nyeri hebat dan sesak napas sejak tadi malam, rasanya seperti ditindih"
-        if c2.button("🤕 Sakit Kepala 2 Hari"):
-            quick_msg = "Sakit kepala berdenyut di bagian belakang sudah 2 hari"
-        if c3.button("🤒 Demam & Menggigil"):
-            quick_msg = "Badan demam naik turun 3 hari disertai batuk pilek"
+        if qc1.button("⚠️ Nyeri Dada & Sesak", use_container_width=True):
+            quick_msg = "Dada saya nyeri hebat seperti ditindih dan sesak napas sejak 1 jam lalu ⚠️"
+        if qc2.button("🤕 Sakit Kepala 2 Hari", use_container_width=True):
+            quick_msg = "Sakit kepala berdenyut di bagian belakang sudah 2 hari, tambah berat kalau kurang tidur"
+        if qc3.button("💊 Respon Obat Mandiri", use_container_width=True):
+            quick_msg = "Sudah minum parasetamol 500mg satu kali, agak membaik tapi masih pusing"
 
         # Chat input
-        user_input = st.chat_input("Ketik pesan balasan Anda...") or quick_msg
+        user_input = st.chat_input("Ketik keluhan atau jawab pertanyaan TanyaMed...") or quick_msg
         if user_input:
-            st.session_state.chat_history.append({"role": "user", "content": user_input})
-            bot_reply, reply_type = analyze_intent_and_reply(user_input, st.session_state.chat_history)
-            st.session_state.chat_history.append({"role": "assistant", "content": bot_reply})
+            now_t = datetime.datetime.now().strftime("%H:%M WIB")
+            st.session_state.chat_history.append({
+                "role": "user",
+                "content": user_input,
+                "time": now_t
+            })
+            bot_reply, r_type = process_chat_message(user_input)
+            st.session_state.chat_history.append({
+                "role": "assistant",
+                "content": bot_reply,
+                "type": r_type,
+                "time": datetime.datetime.now().strftime("%H:%M WIB")
+            })
             st.rerun()
 
-    with col_info:
-        st.info(
-            "**Prinsip Etis TanyaMed:**\n"
-            "1. **Tidak pernah mendiagnosis penyakit.**\n"
-            "2. **Tidak pernah meresepkan obat keras/antibiotik.**\n"
-            "3. Peran sistem adalah 'menggali dan menyampaikan' ke faskes formal."
-        )
+    with col_side:
+        # 5 Elements Card
+        st.markdown("""
+        <div class="clean-card">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                <div>
+                    <div class="metric-label">Aliran Ekstraksi</div>
+                    <div style="font-weight: 700; font-size: 14px; color: #0f172a;">5 Elemen Pre-Anamnesis</div>
+                </div>
+                <span class="pill-badge pill-neutral">TIER 2</span>
+            </div>
+            <p style="font-size: 12px; color: #64748b; margin-bottom: 14px; line-height: 1.5;">
+                TanyaMed menggali 5 aspek penting sebelum dokter memeriksa tatap muka agar waktu tunggu berkurang 65%:
+            </p>
+        </div>
+        """, unsafe_allow_html=True)
         
-        st.markdown("#### 🎯 5 Elemen Pre-Anamnesis")
-        elements = [
-            ("1. Keluhan Utama", len(st.session_state.chat_history) >= 2),
-            ("2. Lokasi Gejala", len(st.session_state.chat_history) >= 4),
-            ("3. Durasi Keluhan", len(st.session_state.chat_history) >= 4),
-            ("4. Karakteristik / Faktor", len(st.session_state.chat_history) >= 6),
-            ("5. Riwayat Obat Mandiri", len(st.session_state.chat_history) >= 8),
+        user_turns = len([m for m in st.session_state.chat_history if m["role"] == "user"])
+        elements_checklist = [
+            ("1. Keluhan Utama", user_turns >= 1),
+            ("2. Lokasi Gejala", user_turns >= 2),
+            ("3. Durasi Keluhan", user_turns >= 2),
+            ("4. Karakteristik / Pemicu", user_turns >= 3),
+            ("5. Riwayat Obat Mandiri", user_turns >= 4),
         ]
-        for name, done in elements:
+        
+        for name, done in elements_checklist:
             if done:
-                st.markdown(f"✅ **{name}**")
+                st.markdown(f"""
+                <div style="background-color: #ecfdf5; border: 1px solid #a7f3d0; border-radius: 8px; padding: 10px 14px; margin-bottom: 8px; font-size: 12px; font-weight: 600; color: #065f46; display: flex; justify-content: space-between;">
+                    <span>{name}</span>
+                    <span>✓ Terkumpul</span>
+                </div>
+                """, unsafe_allow_html=True)
             else:
-                st.markdown(f"⏳ *{name}*")
+                st.markdown(f"""
+                <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 10px 14px; margin-bottom: 8px; font-size: 12px; color: #64748b; display: flex; justify-content: space-between;">
+                    <span>{name}</span>
+                    <span style="font-size: 11px;">Menunggu info...</span>
+                </div>
+                """, unsafe_allow_html=True)
+
+        if st.button("🔄 Reset Sesi Percakapan", use_container_width=True):
+            st.session_state.chat_history = [
+                {
+                    "role": "assistant",
+                    "type": "normal",
+                    "time": "08:00 WIB",
+                    "content": "Halo! Saya **TanyaMed** 👋 Asisten triase & pre-anamnesis kesehatan Anda.\n\nBoleh ceritakan apa keluhan yang sedang kamu rasakan saat ini?"
+                }
+            ]
+            st.rerun()
+
+
+# ==========================================
+# TAB 2: PUSKESMAS WONOREJO DASHBOARD
+# ==========================================
+with tabs[1]:
+    # 4 Clean Metric Cards
+    m1, m2, m3, m4 = st.columns(4)
+    total_rec = len(st.session_state.faskes_records)
+    emer_rec = len([r for r in st.session_state.faskes_records if r["type"] == "emergency"])
+    poli_rec = len([r for r in st.session_state.faskes_records if r["type"] == "non_emergency"])
+    verif_rec = len([r for r in st.session_state.faskes_records if r.get("verified")])
+    
+    with m1:
+        st.markdown(f"""
+        <div class="metric-card">
+            <div class="metric-label">Total Pasien Masuk</div>
+            <div class="metric-value">{total_rec}</div>
+            <div class="metric-delta">Aliran aktif hari ini</div>
+        </div>
+        """, unsafe_allow_html=True)
+    with m2:
+        st.markdown(f"""
+        <div class="metric-card">
+            <div class="metric-label">Triase Merah (IGD)</div>
+            <div class="metric-value" style="color: #ff4b4b;">{emer_rec}</div>
+            <div class="metric-delta-danger">Prioritas penanganan 119</div>
+        </div>
+        """, unsafe_allow_html=True)
+    with m3:
+        st.markdown(f"""
+        <div class="metric-card">
+            <div class="metric-label">Pre-Anamnesis Poli</div>
+            <div class="metric-value">{poli_rec}</div>
+            <div class="metric-delta">Efisiensi waktu 65%</div>
+        </div>
+        """, unsafe_allow_html=True)
+    with m4:
+        st.markdown(f"""
+        <div class="metric-card">
+            <div class="metric-label">Terverifikasi Dokter</div>
+            <div class="metric-value">{verif_rec}</div>
+            <div class="metric-delta">Tersinkron SATUSEHAT</div>
+        </div>
+        """, unsafe_allow_html=True)
+
+    st.write("")
+    st.markdown("#### 📥 Aliran Kartu Pre-Anamnesis & Triase Real-Time")
+    
+    for idx, rec in enumerate(st.session_state.faskes_records):
+        is_emer = rec["type"] == "emergency"
+        
+        with st.expander(
+            f"{'🚨 TRIASE MERAH' if is_emer else '📋 PRE-ANAMNESIS'} — {rec['id']} | {rec['patient_name']} ({rec['timestamp']})",
+            expanded=(idx == 0)
+        ):
+            c_left, c_right = st.columns([1.5, 1])
+            with c_left:
+                st.markdown(f"**Keluhan Pasien:** {rec['keluhan']}")
+                if is_emer:
+                    st.error(f"**Alasan Klinis:** {rec.get('alasan', 'Kegawatan')}\n\n**Status:** {rec['status']}")
+                else:
+                    st.markdown(f"""
+                    - **Lokasi Gejala:** {rec.get('lokasi', '-')}
+                    - **Durasi Keluhan:** {rec.get('durasi', '-')}
+                    - **Karakteristik & Pemicu:** {rec.get('karakteristik', '-')}
+                    - **Obat Mandiri:** {rec.get('obat_mandiri', '-')}
+                    """)
+                st.caption(f"SHA-256 Checksum: `{rec['hash']}`")
                 
-        st.markdown("---")
-        st.markdown("#### 🚨 Jalur Triase Merah")
-        st.caption("Jika terdeteksi kata kunci kegawatan (nyeri dada, stroke, sesak napas berat), percakapan langsung dihentikan dan diarahkan ke IGD 119.")
+            with c_right:
+                st.markdown("**Verifikasi Klinis Dokter:**")
+                if rec.get("verified"):
+                    st.success(f"✓ Terverifikasi\n\nCatatan: {rec.get('doctor_note', '-')}")
+                else:
+                    new_note = st.text_input(f"Catatan Dokter ({rec['id']}):", key=f"note_{rec['id']}")
+                    if st.button(f"Verifikasi & Simpan", key=f"btn_{rec['id']}", type="primary"):
+                        st.session_state.faskes_records[idx]["verified"] = True
+                        st.session_state.faskes_records[idx]["doctor_note"] = new_note or "Diverifikasi dokter poli"
+                        st.success("Tersimpan!")
+                        st.rerun()
 
-elif "Puskesmas Wonorejo" in menu:
-    st.markdown('<div class="main-title">🏥 Dashboard Faskes — Puskesmas Wonorejo</div>', unsafe_allow_html=True)
-    st.markdown('<div class="sub-title">Kartu triase darurat dan ringkasan pre-anamnesis yang diterima tenaga medis sebelum tatap muka</div>', unsafe_allow_html=True)
-    
-    c_stat1, c_stat2, c_stat3 = st.columns(3)
-    emergencies = [r for r in st.session_state.faskes_records if r["type"] == "emergency"]
-    non_emergencies = [r for r in st.session_state.faskes_records if r["type"] == "non_emergency"]
-    
-    c_stat1.metric("Total Pasien Masuk", len(st.session_state.faskes_records))
-    c_stat2.metric("Triase Merah (Darurat IGD)", len(emergencies), delta=f"{len(emergencies)} Perlu Siaga", delta_color="inverse")
-    c_stat3.metric("Pre-Anamnesis Poli Umum", len(non_emergencies), delta="Efisiensi Waktu Anamnesis 65%")
-    
-    st.markdown("---")
-    st.subheader("📥 Aliran Kartu Pre-Anamnesis & Triase Real-Time")
-    
-    for r in st.session_state.faskes_records:
-        if r["type"] == "emergency":
-            st.error(
-                f"### ⚠️ RUJUKAN DARURAT MASUK — {r['id']} ({r['timestamp']})\n"
-                f"**Pasien:** {r['patient_name']}  \n"
-                f"**Keluhan:** {r['keluhan']}  \n"
-                f"**Alasan Klinis:** {r.get('alasan', 'Kegawatan')}  \n"
-                f"**Status Rekomendasi:** `{r['status']}`  \n"
-                f"🔒 *SHA-256 Checksum:* `{r.get('hash', 'N/A')[:24]}...`"
-            )
-        else:
-            with st.expander(f"📋 {r['id']} — {r['keluhan']} ({r['timestamp']})", expanded=True):
-                col_a, col_b = st.columns(2)
-                with col_a:
-                    st.write(f"**Pasien:** {r['patient_name']}")
-                    st.write(f"**Keluhan Utama:** {r['keluhan']}")
-                    st.write(f"**Lokasi Gejala:** {r.get('lokasi', '-')}")
-                with col_b:
-                    st.write(f"**Durasi:** {r.get('durasi', '-')}")
-                    st.write(f"**Karakteristik:** {r.get('karakteristik', '-')}")
-                    st.write(f"**Obat Mandiri:** {r.get('obat_mandiri', '-')}")
-                st.caption(f"Status: {r['status']} | Enkripsi: AES-256 Verified")
 
-elif "SATUSEHAT & Gamifikasi" in menu:
-    st.markdown('<div class="main-title">🇮🇩 Integrasi SATUSEHAT & Gamifikasi</div>', unsafe_allow_html=True)
-    st.markdown('<div class="sub-title">Kepatuhan Rekam Medis Elektronik (PMK No. 24/2022) dan Pendorong Literasi Sehat</div>', unsafe_allow_html=True)
-    
-    tab1, tab2, tab3 = st.tabs(["🏆 Gamifikasi & Poin Sehat", "🗄️ Rekam Medis Longitudinal (PMK 24/2022)", "🔐 Kriptografi & Integritas"])
-    
-    with tab1:
-        st.subheader("Sistem Poin Berkelanjutan TanyaMed")
-        st.write("Berbeda dari gamifikasi musiman, poin TanyaMed mengonfirmasi perilaku kesehatan berkelanjutan: kelengkapan riwayat gejala, kepatuhan minum obat, dan literasi.")
-        
-        c1, c2, c3 = st.columns(3)
-        c1.metric("Poin Terkumpul", f"{st.session_state.user_points} Poin")
-        c2.metric("Tingkat Level", st.session_state.user_badges[-1])
-        c3.metric("Potongan Biaya Lab Siap Pakai", f"Rp {st.session_state.user_points * 1000:,}")
-        
-        st.markdown("#### 🎖️ Tingkatan Lencana:")
-        st.write("- **10 Poin:** 🥉 Pemula Sehat (Menyelesaikan 1 pre-anamnesis terstruktur)")
-        st.write("- **30 Poin:** 🥈 Pasien Siaga (Melakukan pemantauan gejala mandiri & riwayat akurat)")
-        st.write("- **60 Poin:** 🥇 Ahli Riwayat (Kepatuhan terapi obat pasca-konsultasi & literasi penuh)")
-        
-        st.markdown("#### 🎁 Tukar Poin Reward:")
-        col_v1, col_v2 = st.columns(2)
-        with col_v1:
-            st.success("Voucher Diskon Cek Kolesterol 20% (Perlu 30 Poin)")
-            if st.button("Klaim Voucher Kolesterol", disabled=(st.session_state.user_points < 30)):
-                st.balloons()
-                st.success("Klaim berhasil! Kode voucher: TANYA-SEHAT-LAB20")
-        with col_v2:
-            st.info("Voucher Konsultasi Dokter Spesialis 10% (Perlu 50 Poin)")
-            if st.button("Klaim Voucher Spesialis", disabled=(st.session_state.user_points < 50)):
-                st.success("Klaim berhasil! Kode voucher: TANYA-SPESIALIS-10")
+# ==========================================
+# TAB 3: SATUSEHAT & GAMIFIKASI
+# ==========================================
+with tabs[2]:
+    st.markdown(f"""
+    <div class="clean-card">
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px;">
+            <div>
+                <span class="pill-badge pill-green" style="margin-bottom: 8px;">KEMENKES RI • SATUSEHAT REWARDS</span>
+                <div style="font-size: 18px; font-weight: 700; color: #0f172a; margin-top: 4px;">
+                    Gamifikasi Kesehatan Terintegrasi SATUSEHAT
+                </div>
+                <p style="font-size: 12px; color: #64748b; margin-top: 4px; max-width: 650px;">
+                    Poin sehat diperoleh dengan melengkapi pre-anamnesis WhatsApp secara jujur dan menyelesaikan jadwal minum obat Puskesmas.
+                </p>
+            </div>
+            <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 14px 20px; text-align: right;">
+                <div class="metric-label">Saldo Poin Kamu</div>
+                <div style="font-size: 24px; font-weight: 700; color: #0f172a;">{st.session_state.user_points} Pts</div>
+                <div style="font-size: 11px; color: #10b981; font-weight: 500;">Status Akun Aktif</div>
+            </div>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
 
-    with tab2:
-        st.subheader("Ketentuan Retensi Rekam Medis Elektronik")
-        st.write("Sesuai **PMK No. 24 Tahun 2022**, seluruh rekam medis digital wajib disimpan minimal **25 tahun** dalam format interoperabel (FHIR).")
-        st.json({
-            "resourceType": "Encounter",
-            "id": "tanyamed-encounter-001",
-            "status": "planned",
-            "class": {"code": "AMB", "display": "Ambulatory / Rawat Jalan"},
-            "subject": {"reference": "Patient/IHIS-100293848", "display": "Pasien TanyaMed"},
-            "reasonCode": [{"text": "Pre-anamnesis via WhatsApp - Terverifikasi"}],
-            "period": {"start": datetime.datetime.now().isoformat()}
-        })
-
-    with tab3:
-        st.subheader("Keamanan Data & Integritas (UU PDP No. 27/2022)")
-        st.write("- **Enkripsi Transit & Rest:** AES-256")
-        st.write("- **Integritas Record:** SHA-256 Hash Chaining")
-        for rec in st.session_state.faskes_records[:3]:
-            st.code(f"Record: {rec['id']} | SHA-256: {rec.get('hash', 'e3b0c442...')}")
-
-elif "Kepatuhan Terapi" in menu:
-    st.markdown('<div class="main-title">💊 Kepatuhan Terapi Pasca-Konsultasi</div>', unsafe_allow_html=True)
-    st.markdown('<div class="sub-title">Pengingat minum obat otomatis dan pencatatan keluhan efek samping setelah mendapat resep</div>', unsafe_allow_html=True)
+    # Vouchers
+    st.markdown("#### 🎁 Katalog Penukaran Voucher Sehat")
+    v1, v2, v3 = st.columns(3)
     
-    st.info("Setelah berkonsultasi dengan dokter di Puskesmas, resep obat diteruskan ke TanyaMed untuk pemantauan jadwal dan kepatuhan minum obat secara real-time.")
+    with v1:
+        st.markdown("""
+        <div class="clean-card">
+            <span class="pill-badge pill-neutral">LABORATORIUM</span>
+            <div style="font-weight: 700; font-size: 14px; margin: 8px 0 4px 0;">Voucher Cek Kolesterol 20%</div>
+            <p style="font-size: 12px; color: #64748b;">Diskon 20% pemeriksaan lab mitra Puskesmas Wonorejo.</p>
+            <div style="font-weight: 700; font-size: 13px; color: #0f172a; margin: 8px 0;">30 Poin</div>
+        </div>
+        """, unsafe_allow_html=True)
+        if st.button("Tukarkan (30 Pts)", disabled=(st.session_state.user_points < 30), key="v_kol"):
+            st.session_state.user_points -= 30
+            st.success("Kode Voucher: TANYA-LAB20-KOL")
+            st.rerun()
+
+    with v2:
+        st.markdown("""
+        <div class="clean-card">
+            <span class="pill-badge pill-neutral">TELEKONSULTASI</span>
+            <div style="font-weight: 700; font-size: 14px; margin: 8px 0 4px 0;">Voucher Dokter Spesialis 15%</div>
+            <p style="font-size: 12px; color: #64748b;">Potongan biaya konsultasi rujukan lanjutan di RSUD terdekat.</p>
+            <div style="font-weight: 700; font-size: 13px; color: #0f172a; margin: 8px 0;">50 Poin</div>
+        </div>
+        """, unsafe_allow_html=True)
+        if st.button("Tukarkan (50 Pts)", disabled=(st.session_state.user_points < 50), key="v_spes"):
+            st.session_state.user_points -= 50
+            st.success("Kode Voucher: TANYA-SPESIALIS15")
+            st.rerun()
+
+    with v3:
+        st.markdown("""
+        <div class="clean-card">
+            <span class="pill-badge pill-neutral">APOTEK FASKES</span>
+            <div style="font-weight: 700; font-size: 14px; margin: 8px 0 4px 0;">Paket Vitamin Gratis</div>
+            <p style="font-size: 12px; color: #64748b;">Ambil suplemen multivitamin di apotek tanpa biaya tambahan.</p>
+            <div style="font-weight: 700; font-size: 13px; color: #0f172a; margin: 8px 0;">60 Poin</div>
+        </div>
+        """, unsafe_allow_html=True)
+        if st.button("Tukarkan (60 Pts)", disabled=(st.session_state.user_points < 60), key="v_vit"):
+            st.session_state.user_points -= 60
+            st.success("Kode Voucher: TANYA-VITAMIN-FREE")
+            st.rerun()
+
+
+# ==========================================
+# TAB 4: KEPATUHAN TERAPI
+# ==========================================
+with tabs[3]:
+    taken_num = len([m for m in st.session_state.medications if m["taken"]])
+    adherence_pct = int((taken_num / len(st.session_state.medications)) * 100)
     
-    st.subheader("Daftar Resep Obat Aktif Hari Ini")
+    st.markdown(f"""
+    <div class="clean-card">
+        <div class="metric-label">Tingkat Kepatuhan Obat Hari Ini</div>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+            <span style="font-weight: 700; font-size: 16px; color: #0f172a;">{taken_num} dari {len(st.session_state.medications)} Dosis Selesai</span>
+            <span style="font-weight: 700; color: #ff4b4b;">{adherence_pct}%</span>
+        </div>
+        <div style="width: 100%; height: 8px; background-color: #f1f5f9; border-radius: 9999px; overflow: hidden;">
+            <div style="width: {adherence_pct}%; height: 100%; background-color: #ff4b4b; border-radius: 9999px;"></div>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+
+    st.markdown("#### 💊 Daftar Obat Resep Puskesmas Wonorejo")
     for idx, med in enumerate(st.session_state.medications):
-        c1, c2, c3 = st.columns([2, 2, 1])
-        c1.write(f"💊 **{med['name']}** ({med['aturan']})")
-        c2.write(f"Status: {'✅ Sudah diminum' if med['diminum'] else '⏳ Menunggu jadwal'}")
-        if not med['diminum']:
-            if c3.button(f"Konfirmasi Minum #{idx+1}"):
-                st.session_state.medications[idx]['diminum'] = True
-                st.session_state.user_points += 5
-                st.success(f"+5 Poin Sehat untuk kepatuhan obat {med['name']}!")
-                st.rerun()
-        else:
-            c3.write(f"Jam: {med['waktu']}")
+        c_m1, c_m2 = st.columns([3, 1])
+        with c_m1:
+            st.markdown(f"""
+            <div class="clean-card" style="padding: 14px 18px; margin-bottom: 8px;">
+                <div style="font-weight: 700; font-size: 14px; color: #0f172a;">{med['name']} ({med['dosage']})</div>
+                <div style="font-size: 12px; color: #64748b; margin-top: 2px;">Aturan: {med['schedule']}</div>
+                <div style="font-size: 11px; color: {'#10b981' if med['taken'] else '#f59e0b'}; font-weight: 600; margin-top: 4px;">
+                    {'✓ Terkonfirmasi diminum: ' + str(med['time']) if med['taken'] else '⏳ Menunggu jadwal'}
+                </div>
+            </div>
+            """, unsafe_allow_html=True)
+        with c_m2:
+            if not med["taken"]:
+                if st.button(f"Tandai Sudah Minum (+5 Pts)", key=f"med_{med['id']}", type="primary", use_container_width=True):
+                    st.session_state.medications[idx]["taken"] = True
+                    st.session_state.medications[idx]["time"] = datetime.datetime.now().strftime("%H:%M WIB")
+                    st.session_state.user_points += 5
+                    st.session_state.user_badges = update_badges(st.session_state.user_points)
+                    st.success(f"+5 Poin untuk {med['name']}!")
+                    st.rerun()
+            else:
+                st.button("Sudah Diminum ✓", disabled=True, key=f"med_done_{med['id']}", use_container_width=True)
 
-    st.markdown("---")
-    st.subheader("Laporkan Efek Samping Obat")
-    with st.form("efek_samping"):
-        obat_terkait = st.selectbox("Pilih Obat:", [m['name'] for m in st.session_state.medications])
-        keluhan_efek = st.text_area("Deskripsikan gejala efek samping yang dirasakan (misal: mual, pusing):")
-        submitted = st.form_submit_button("Kirim ke Dokter Faskes")
-        if submitted and keluhan_efek:
-            st.success("Laporan efek samping telah tercatat dan dikirimkan ke dokter di Puskesmas Wonorejo untuk dievaluasi.")
 
-elif "Siap Push ke Streamlit" in menu:
-    st.markdown('<div class="main-title">🚀 Siap Push ke Streamlit (Deployment Guide)</div>', unsafe_allow_html=True)
-    st.markdown('<div class="sub-title">Aplikasi ini sudah berstruktur standar Python Streamlit dan siap di-push ke GitHub dan dideploy di Streamlit Cloud</div>', unsafe_allow_html=True)
+# ==========================================
+# TAB 5: FILOSOFI & AI
+# ==========================================
+with tabs[4]:
+    p_col1, p_col2 = st.columns(2, gap="large")
     
-    st.success("✅ Seluruh file proyek (`app.py`, `requirements.txt`, `.streamlit/config.toml`, `README.md`) sudah dibuat dan siap digunakan!")
-    
-    st.subheader("📋 3 Langkah Mudah Push ke Streamlit Cloud:")
-    
-    st.markdown("""
-    #### 1. Inisialisasi Git & Push ke GitHub
-    Jalankan perintah ini di terminal proyek Anda:
-    ```bash
-    git init
-    git add .
-    git commit -m "feat: TanyaMed siap di-push ke Streamlit Cloud"
-    git branch -M main
-    git remote add origin https://github.com/USERNAME/tanyamed.git
-    git push -u origin main
-    ```
-
-    #### 2. Sambungkan ke Streamlit Community Cloud
-    1. Masuk ke [share.streamlit.io](https://share.streamlit.io) menggunakan akun GitHub.
-    2. Klik **"New app"**.
-    3. Pilih repository `USERNAME/tanyamed`, branch `main`, dan file `app.py`.
-    4. Klik tombol **"Deploy!"**.
-
-    #### 3. Selesai!
-    Aplikasi TanyaMed Anda akan langsung live dalam beberapa saat dan dapat diakses publik!
-    """)
-    
-    st.markdown("---")
-    st.subheader("📦 Isi File `requirements.txt`")
-    st.code("streamlit>=1.35.0\ngoogle-genai>=0.1.1\npandas>=2.0.0", language="text")
-
-elif "Filosofi & Arsitektur" in menu:
-    st.markdown('<div class="main-title">📖 Filosofi & Arsitektur Sistem TanyaMed</div>', unsafe_allow_html=True)
-    
-    col1, col2 = st.columns(2)
-    with col1:
+    with p_col1:
         st.markdown("""
-        ### 🧠 2 Mode Berpikir AI
-        1. **Mode Triase (Deteksi Bahaya):**
-           - Menilai tanda bahaya (nyeri dada, sesak berat, stroke, perdarahan hebat).
-           - Begitu terdeteksi, berhenti bertanya, segera rujuk IGD 119.
-        2. **Mode Pre-Anamnesis (Penggalian Riwayat):**
-           - Menggali 5 elemen: keluhan, lokasi, durasi, karakteristik, riwayat obat mandiri.
-           - Mengalir 1-2 pertanyaan per giliran seperti obrolan manusia.
-        """)
-    with col2:
-        st.markdown("""
-        ### 🏛️ Arsitektur 3 Tingkat
-        - **Tier 1 (Model Bahasa):** Membalas santun, menilai triase & memanggil tool `rujuk_darurat` / `catat_riwayat`.
-        - **Tier 2 (Ekstraksi Terstruktur):** Mengonversi percakapan ke entitas data terpisah.
-        - **Tier 3 (Penyimpanan Terstruktur):** Format SATUSEHAT (FHIR), enkripsi AES-256, diteruskan ke faskes.
-        """)
+        <div class="clean-card">
+            <div class="metric-label">Prinsip Utama</div>
+            <div style="font-weight: 700; font-size: 15px; color: #0f172a; margin-bottom: 8px;">
+                🛡️ Batasan Etis yang Tidak Bisa Ditawar
+            </div>
+            <p style="font-size: 12px; color: #475569; line-height: 1.6;">
+                TanyaMed <strong>tidak pernah mendiagnosis penyakit</strong> dan <strong>tidak pernah merekomendasikan obat spesifik</strong>.
+                Peran sistem berhenti di <em>"menggali dan menyampaikan"</em>, bukan <em>"memutuskan dan mengobati"</em>.
+            </p>
+        </div>
+        
+        <div class="clean-card">
+            <div class="metric-label">Logika Pengambilan Keputusan</div>
+            <div style="font-weight: 700; font-size: 15px; color: #0f172a; margin-bottom: 8px;">
+                🧠 2 Mode Berpikir AI Bergantian
+            </div>
+            <div style="background-color: #fef2f2; border: 1px solid #fecaca; border-radius: 8px; padding: 10px 14px; margin-bottom: 8px; font-size: 12px; color: #450a0a;">
+                <strong>1. Mode Triase (Deteksi Bahaya):</strong> Mendeteksi tanda kegawatdaruratan (nyeri dada hebat, sesak napas akut, tanda stroke). Begitu terdeteksi, sistem berhenti bertanya dan langsung mengarahkan ke IGD 119.
+            </div>
+            <div style="background-color: #ecfdf5; border: 1px solid #a7f3d0; border-radius: 8px; padding: 10px 14px; font-size: 12px; color: #065f46;">
+                <strong>2. Mode Pre-Anamnesis (Penggalian Riwayat):</strong> Jika aman, menggali 5 elemen riwayat secara bertahap mengikuti ritme percakapan manusia.
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
 
-# Footer
-st.markdown("---")
-st.caption("TanyaMed © 2026 — Jembatan Swadiagnosis ke Sistem Kesehatan Formal SATUSEHAT & Faskes Indonesia.")
+    with p_col2:
+        st.markdown("""
+        <div class="clean-card">
+            <div class="metric-label">Infrastruktur Sistem</div>
+            <div style="font-weight: 700; font-size: 15px; color: #0f172a; margin-bottom: 8px;">
+                🏛️ Arsitektur Teknis 3 Tingkat
+            </div>
+            <div style="font-size: 12px; color: #475569; line-height: 1.6;">
+                <p><strong>Tier 1 — Model Bahasa (LLM):</strong> Membalas percakapan real-time, menilai triase dan kelengkapan riwayat serta memanggil tools otonom.</p>
+                <p><strong>Tier 2 — Ekstraksi Terstruktur:</strong> Mengonversi teks bebas menjadi 5 field deterministik tanpa kehilangan konteks klinis.</p>
+                <p><strong>Tier 3 — Penyimpanan SATUSEHAT:</strong> Standar HL7 FHIR, enkripsi AES-256, retensi 25 tahun (PMK No. 24/2022) & UU PDP No. 27/2022.</p>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+
+
+# --- 7. CLEAN FOOTER ---
+st.write("")
+st.markdown("""
+<div style="background-color: #ffffff; border-top: 1px solid #e2e8f0; padding: 18px 24px; border-radius: 12px; margin-top: 32px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; font-size: 12px; color: #64748b;">
+    <div style="display: flex; align-items: center; gap: 8px;">
+        <span style="width: 7px; height: 7px; border-radius: 50%; background-color: #ff4b4b; display: inline-block;"></span>
+        <strong style="color: #0f172a;">TanyaMed Platform</strong>
+        <span>|</span>
+        <span>Jembatan Swadiagnosis ke Sistem Kesehatan Formal SATUSEHAT</span>
+    </div>
+    <div style="display: flex; gap: 12px; color: #94a3b8;">
+        <span>Kemenkes PMK No. 24/2022</span>
+        <span>•</span>
+        <span>UU PDP No. 27/2022</span>
+        <span>•</span>
+        <span style="color: #ff4b4b; font-weight: 600;">Streamlit Cloud Ready</span>
+    </div>
+</div>
+""", unsafe_allow_html=True)

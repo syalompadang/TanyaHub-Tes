@@ -4,7 +4,6 @@ import { WhatsAppView } from "./components/WhatsAppView";
 import { FaskesView } from "./components/FaskesView";
 import { SatuSehatView } from "./components/SatuSehatView";
 import { AdherenceView } from "./components/AdherenceView";
-import { StreamlitHubView } from "./components/StreamlitHubView";
 import { PhilosophyView } from "./components/PhilosophyView";
 import { ChatMessage, TriageRecord, Medication, VoucherItem } from "./types";
 
@@ -364,8 +363,6 @@ export default function App() {
             points={points}
           />
         )}
-
-        {activeTab === "streamlit" && <StreamlitHubView />}
 
         {activeTab === "filosofi" && <PhilosophyView />}
       </main>

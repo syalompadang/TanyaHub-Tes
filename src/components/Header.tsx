@@ -4,7 +4,6 @@ import {
   Building2,
   ShieldCheck,
   Pill,
-  FileCode2,
   BookOpen,
   Award,
   Sparkles,
@@ -51,13 +50,6 @@ export const Header: React.FC<HeaderProps> = ({
       label: "Kepatuhan Terapi",
       icon: Pill,
       badgeText: null,
-    },
-    {
-      id: "streamlit",
-      label: "Siap Push ke Streamlit 🚀",
-      icon: FileCode2,
-      badgeText: "app.py Ready",
-      badgeColor: "bg-[#ff4b4b] text-white",
     },
     {
       id: "filosofi",
