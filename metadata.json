@@ -1,0 +1,7 @@
+{
+  "name": "TanyaMed - Triase & Pre-Anamnesis SATUSEHAT",
+  "description": "Layanan kesehatan percakapan triase WhatsApp, pre-anamnesis terstruktur 5 elemen, dashboard faskes, rekam medis SATUSEHAT, dan generator kode siap Streamlit.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
+
