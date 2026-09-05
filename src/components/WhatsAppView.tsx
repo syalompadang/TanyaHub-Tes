@@ -224,11 +224,41 @@ export const WhatsAppView: React.FC<WhatsAppViewProps> = ({
             <div ref={messagesEndRef} />
           </div>
 
-          {/* Quick Symptom Chips */}
+          {/* Quick Symptom & Conversational Chips */}
           <div className="bg-white border-t border-[#f1f5f9] px-4 py-2.5 flex items-center space-x-2 overflow-x-auto text-xs shrink-0">
             <span className="text-slate-400 text-[10px] uppercase font-bold tracking-wider whitespace-nowrap flex items-center gap-1">
               <CornerDownRight className="w-3 h-3 text-slate-400" /> Contoh:
             </span>
+            <button
+              onClick={() =>
+                handleQuickPrompt(
+                  "Halo, apa kabar hari ini? Mau tanya tips menjaga kebugaran tubuh saat sibuk kerja dong 😊"
+                )
+              }
+              className="bg-[#f8fafc] hover:bg-slate-100 text-slate-700 border border-[#e2e8f0] px-3 py-1 rounded-md whitespace-nowrap transition-colors text-[11px] font-medium"
+            >
+              👋 Halo, Tanya Tips Kebugaran
+            </button>
+            <button
+              onClick={() =>
+                handleQuickPrompt(
+                  "Apakah obat Parasetamol aman diminum sebelum makan, dan apa fungsi utamanya?"
+                )
+              }
+              className="bg-[#f8fafc] hover:bg-slate-100 text-slate-700 border border-[#e2e8f0] px-3 py-1 rounded-md whitespace-nowrap transition-colors text-[11px] font-medium"
+            >
+              💊 Aturan Minum Parasetamol
+            </button>
+            <button
+              onClick={() =>
+                handleQuickPrompt(
+                  "Sakit kepala berdenyut di bagian belakang sudah 2 hari, bertambah berat kalau kurang tidur"
+                )
+              }
+              className="bg-[#f8fafc] hover:bg-slate-100 text-slate-700 border border-[#e2e8f0] px-3 py-1 rounded-md whitespace-nowrap transition-colors text-[11px]"
+            >
+              🤕 Gejala Sakit Kepala 2 Hari
+            </button>
             <button
               onClick={() =>
                 handleQuickPrompt(
@@ -238,26 +268,6 @@ export const WhatsAppView: React.FC<WhatsAppViewProps> = ({
               className="bg-red-50 hover:bg-red-100 text-[#ff4b4b] border border-red-200 px-3 py-1 rounded-md whitespace-nowrap transition-colors font-medium text-[11px]"
             >
               ⚠️ Nyeri Dada & Sesak (Kegawatan)
-            </button>
-            <button
-              onClick={() =>
-                handleQuickPrompt(
-                  "Sakit kepala berdenyut di bagian belakang sudah 2 hari, tambah berat kalau kurang tidur"
-                )
-              }
-              className="bg-[#f8fafc] hover:bg-slate-100 text-slate-700 border border-[#e2e8f0] px-3 py-1 rounded-md whitespace-nowrap transition-colors text-[11px]"
-            >
-              🤕 Sakit Kepala 2 Hari
-            </button>
-            <button
-              onClick={() =>
-                handleQuickPrompt(
-                  "Sudah minum parasetamol 500mg satu kali, agak membaik tapi masih pusing"
-                )
-              }
-              className="bg-[#f8fafc] hover:bg-slate-100 text-slate-700 border border-[#e2e8f0] px-3 py-1 rounded-md whitespace-nowrap transition-colors text-[11px]"
-            >
-              💊 Respon Obat Mandiri
             </button>
           </div>
 

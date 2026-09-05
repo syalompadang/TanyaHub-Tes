@@ -9,6 +9,9 @@ import datetime
 import hashlib
 import json
 import os
+import re
+import urllib.request
+import urllib.error
 
 # --- 1. PAGE CONFIGURATION ---
 st.set_page_config(
@@ -215,7 +218,7 @@ if "chat_history" not in st.session_state:
             "role": "assistant",
             "type": "normal",
             "time": "08:00 WIB",
-            "content": "Halo! Saya **TanyaMed** 👋 Asisten triase & pre-anamnesis kesehatan Anda.\n\nBoleh ceritakan apa keluhan yang sedang kamu rasakan saat ini?"
+            "content": "Halo! Apa kabar hari ini? Semoga kamu sehat dan harimu menyenangkan 😊\n\nAda yang bisa saya bantu atau ingin diobrolkan hari ini? Kamu bebas bertanya apa saja—mulai dari informasi kesehatan umum, aturan minum obat, tips gaya hidup, atau ceritakan jika ada keluhan tubuh yang sedang kamu rasakan ya!"
         }
     ]
 if "faskes_records" not in st.session_state:
@@ -259,11 +262,12 @@ if "medications" not in st.session_state:
         {"id": "med-3", "name": "Amoxicillin Trihydrate (Antibiotik)", "dosage": "500mg", "schedule": "3x sehari (Tiap 8 jam — Wajib dihabiskan)", "taken": False, "time": None},
     ]
 
-# --- 4. CORE CLINICAL AI & TRIAGE LOGIC ---
+# --- 4. CORE CLINICAL AI & GEMINI INTEGRATION ---
 EMERGENCY_KEYWORDS = [
     "nyeri dada", "sesak napas", "sesak nafas", "tidak bisa napas", "sulit bernapas",
     "stroke", "mati rasa sebelah", "pingsan", "tidak sadar", "kejang",
-    "muntah darah", "perdarahan hebat", "pendarahan hebat", "tertindih beban berat di dada"
+    "muntah darah", "perdarahan hebat", "pendarahan hebat", "tertindih beban berat di dada",
+    "jantung berdebar hebat", "kehilangan kesadaran", "mulut mencong", "bicara pelo"
 ]
 
 def generate_sha256(data_dict):
@@ -278,13 +282,147 @@ def update_badges(points):
         badges.append("Ahli Riwayat")
     return badges
 
+def get_gemini_api_key():
+    """Retrieve Gemini API key from Streamlit secrets or environment variables."""
+    try:
+        if hasattr(st, "secrets") and "GEMINI_API_KEY" in st.secrets:
+            return st.secrets["GEMINI_API_KEY"]
+    except Exception:
+        pass
+    return os.environ.get("GEMINI_API_KEY")
+
+def call_gemini_api(history, user_text):
+    """Directly invokes Gemini API using Python standard library with zero external dependencies."""
+    api_key = get_gemini_api_key()
+    if not api_key:
+        return None
+
+    system_instruction = (
+        "Kamu adalah TanyaMed, sahabat & asisten kesehatan digital berbasis WhatsApp di Indonesia.\n\n"
+        "KEPRIBADIAN & GAYA KOMUNIKASI:\n"
+        "1. ORGANIK, HANGAT, & FLEKSIBEL: Bersikaplah ramah, empatik, santun, dan luwes seperti tenaga medis atau sahabat kesehatan di WhatsApp. Jangan kaku, jangan seperti kuesioner formal. Jawablah sesuai topik yang diajukan pengguna.\n"
+        "2. DIVERSIFIKASI TOPIK:\n"
+        "   - Sapaan & Kabar ('Halo', 'Apa kabar?', 'Lagi apa'): Jawab dengan hangat dan tulus, tanyakan kabar harinya, ajak ngobrol seputar kesehatan, pola hidup, info obat, atau jika ada keluhan yang ingin diceritakan.\n"
+        "   - Informasi Kesehatan & Pola Hidup ('tips tidur nyenyak', 'berapa liter minum', 'makanan sehat'): Berikan edukasi yang ringkas, praktis, dan mudah dipahami dalam 2-4 kalimat.\n"
+        "   - Informasi Obat ('bolehkah minum parasetamol sebelum makan?', 'fungsi amlodipin apa?', 'kenapa antibiotik harus habis?'): Jelaskan fungsi obat, aturan minum umum, dan tips konsumsi aman. Ingatkan bahwa instruksi dokter dan apoteker adalah rujukan utama.\n"
+        "   - Keluhan Sakit / Ketidaknyamanan Fisik: Berikan empati, lalu bantu gali 5 elemen riwayat secara bertahap dan mengalir: (1) Keluhan utama, (2) Lokasi rasa sakit, (3) Durasi sudah berapa lama, (4) Pemicu yang memperberat/meredakan, (5) Riwayat konsumsi obat mandiri. Tanyakan 1-2 pertanyaan per giliran agar terasa natural.\n"
+        "   - Deteksi Gawat Darurat (Nyeri dada hebat menekan/menjalar, sesak napas berat, tanda stroke/kelemahan separuh tubuh, kejang, muntah darah, pingsan/penurunan kesadaran): Prioritaskan keselamatan! Berikan peringatan tenang dan tegas untuk segera ke IGD terdekat atau menghubungi 119, sarankan posisi setengah duduk, jangan mengemudi sendiri.\n"
+        "3. BATASAN ETIS:\n"
+        "   - JANGAN PERNAH memberikan diagnosis pasti penyakit.\n"
+        "   - JANGAN PERNAH meresepkan obat keras atau menentukan dosis khusus pasien di luar anjuran umum pada kemasan obat bebas.\n"
+        "   - Ingatkan bahwa pemeriksaan langsung oleh dokter faskes tetap diperlukan untuk memastikan kondisi kesehatan.\n\n"
+        "PENTING — METADATA KLINIS TERSEMBUNYI:\n"
+        "Sertakan tag metadata di bagian paling akhir teks responmu persis dalam format ini:\n"
+        "<!--CLINICAL_DATA:{\"intent\":\"greeting\"|\"health_info\"|\"medicine_info\"|\"anamnesis_progress\"|\"anamnesis_complete\"|\"emergency\",\"isEmergency\":false,\"isAnamnesisComplete\":false,\"keluhan\":\"\",\"lokasi\":\"\",\"durasi\":\"\",\"karakteristik\":\"\",\"obatMandiri\":\"\"}-->"
+    )
+
+    contents = []
+    for h in history[-6:]:
+        role = "model" if h.get("role") in ["assistant", "model"] else "user"
+        clean_content = re.sub(r"<!--CLINICAL_DATA:[\s\S]*?-->", "", h.get("content", "")).strip()
+        if clean_content:
+            contents.append({
+                "role": role,
+                "parts": [{"text": clean_content}]
+            })
+    contents.append({
+        "role": "user",
+        "parts": [{"text": user_text}]
+    })
+
+    payload = {
+        "system_instruction": {
+            "parts": [{"text": system_instruction}]
+        },
+        "contents": contents,
+        "generationConfig": {
+            "temperature": 0.7
+        }
+    }
+
+    # Universal Gemini endpoint with standard library urllib
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key={api_key}"
+    req = urllib.request.Request(
+        url,
+        data=json.dumps(payload).encode("utf-8"),
+        headers={"Content-Type": "application/json", "User-Agent": "aistudio-build"}
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=12) as response:
+            res_data = json.loads(response.read().decode("utf-8"))
+            candidate = res_data.get("candidates", [{}])[0]
+            text_val = candidate.get("content", {}).get("parts", [{}])[0].get("text", "")
+            return text_val
+    except Exception as err:
+        return None
+
 def process_chat_message(user_text):
     now_str = datetime.datetime.now().strftime("%H:%M WIB")
-    lower = user_text.lower()
+    lower = user_text.lower().strip()
     
-    # Check Emergency (Triase Merah)
+    # 1. Check Gemini AI First
+    gemini_reply = call_gemini_api(st.session_state.chat_history, user_text)
+    if gemini_reply:
+        clinical_data = {}
+        meta_match = re.search(r"<!--CLINICAL_DATA:([\s\S]*?)-->", gemini_reply)
+        if meta_match:
+            try:
+                clinical_data = json.loads(meta_match.group(1).strip())
+            except Exception:
+                clinical_data = {}
+            clean_reply = re.sub(r"<!--CLINICAL_DATA:[\s\S]*?-->", "", gemini_reply).strip()
+        else:
+            clean_reply = gemini_reply.strip()
+
+        is_emergency = clinical_data.get("isEmergency") or clinical_data.get("intent") == "emergency"
+        if not is_emergency and any(kw in lower for kw in EMERGENCY_KEYWORDS) and "apa itu" not in lower:
+            is_emergency = True
+
+        if is_emergency:
+            rec = {
+                "id": f"TM-{datetime.datetime.now().strftime('%Y%m%d')}-{len(st.session_state.faskes_records)+1:02d}",
+                "timestamp": now_str,
+                "type": "emergency",
+                "patient_name": f"Pasien WhatsApp #{len(st.session_state.faskes_records)+1}",
+                "keluhan": user_text,
+                "lokasi": clinical_data.get("lokasi") or "Vital / Kardiovaskular / Pernapasan",
+                "durasi": clinical_data.get("durasi") or "Akut (Baru Saja Terlaporkan)",
+                "karakteristik": "Tanda bahaya kegawatan memerlukan penanganan darurat",
+                "obat_mandiri": "Belum / Tidak disarankan mandiri",
+                "alasan": "Deteksi tanda bahaya kardiovaskular / kegawatan napas / defisit neurologis akut",
+                "status": "⚠️ SIAGA IGD — Diarahkan Segera ke IGD 119",
+                "verified": False,
+                "doctor_note": ""
+            }
+            rec["hash"] = generate_sha256(rec)
+            st.session_state.faskes_records.insert(0, rec)
+            return clean_reply, "emergency"
+
+        if clinical_data.get("isAnamnesisComplete") or clinical_data.get("intent") == "triage_complete":
+            st.session_state.user_points += 10
+            st.session_state.user_badges = update_badges(st.session_state.user_points)
+            rec = {
+                "id": f"TM-{datetime.datetime.now().strftime('%Y%m%d')}-{len(st.session_state.faskes_records)+1:02d}",
+                "timestamp": now_str,
+                "type": "non_emergency",
+                "patient_name": f"Pasien WhatsApp #{len(st.session_state.faskes_records)+1}",
+                "keluhan": clinical_data.get("keluhan") or user_text,
+                "lokasi": clinical_data.get("lokasi") or "Kepala / area keluhan",
+                "durasi": clinical_data.get("durasi") or "Beberapa hari terakhir",
+                "karakteristik": clinical_data.get("karakteristik") or "Telah digali dalam pre-anamnesis",
+                "obat_mandiri": clinical_data.get("obatMandiri") or "Penanganan mandiri awal",
+                "status": "Tersimpan di Sistem Antrean Poli",
+                "verified": False,
+                "doctor_note": ""
+            }
+            rec["hash"] = generate_sha256(rec)
+            st.session_state.faskes_records.insert(0, rec)
+            return clean_reply, "complete"
+
+        return clean_reply, "normal"
+
+    # 2. Organic Fallback Engine if Gemini offline / no key
     is_emergency = any(kw in lower for kw in EMERGENCY_KEYWORDS)
-    
     if is_emergency:
         reply = (
             "⚠️ **PERINGATAN KONDISI DARURAT MEDIS**\n\n"
@@ -315,25 +453,66 @@ def process_chat_message(user_text):
         st.session_state.faskes_records.insert(0, rec)
         return reply, "emergency"
 
-    # Pre-anamnesis Conversation Loop
-    user_turns = len([m for m in st.session_state.chat_history if m["role"] == "user"])
-    
-    if user_turns == 1:
+    # Greetings & Casual Conversation
+    if any(w in lower for w in ["apa kabar", "halo", "hai", "selamat pagi", "selamat siang", "selamat malam"]):
         reply = (
-            "Baik, saya catat keluhan utamamu. Di mana **lokasi persisnya** rasa sakit atau tidak nyaman tersebut terasa, "
-            "dan sudah berapa lama berlangsung?"
+            "Halo! Kabar saya baik dan siap menemani harimu 😊 Bagaimana kabarmu hari ini? Semoga tubuhmu terasa segar dan fit ya!\n\n"
+            "Ada yang ingin kamu tanyakan atau ceritakan hari ini? Kamu bebas bertanya tentang info obat, tips pola hidup sehat, nutrisi harian, "
+            "atau jika ada keluhan tubuh yang sedang dirasakan, silakan ceritakan santai ya."
         )
         return reply, "normal"
-    elif user_turns == 2:
+
+    # Medication questions
+    if any(w in lower for w in ["obat", "parasetamol", "amoksisilin", "antibiotik", "vitamin", "amlodipin"]):
+        if "parasetamol" in lower:
+            reply = (
+                "Parasetamol adalah obat penurun demam dan pereda nyeri ringan hingga sedang (seperti sakit kepala atau nyeri otot). "
+                "Secara umum dapat diminum sebelum atau sesudah makan dengan segelas air. Dosis dewasa lazim adalah 500mg tiap 4–6 jam bila perlu "
+                "(maksimal 4.000mg/hari). Jangan dikonsumsi bersamaan dengan obat lain yang juga mengandung parasetamol untuk mencegah overdosis hati ya 😊"
+            )
+        else:
+            reply = (
+                "Pertanyaan obat yang bagus! Prinsip penting penggunaan obat: minumlah sesuai aturan pakai (sebelum/sesudah makan), "
+                "jangan menggandakan dosis jika terlewat, dan jika mendapat antibiotik, wajib dihabiskan sesuai anjuran dokter meskipun sudah merasa sembuh. "
+                "Ada obat spesifik yang sedang ingin kamu tanyakan aturan minumnya?"
+            )
+        return reply, "normal"
+
+    # General Wellness / Tips
+    is_wellness = any(w in lower for w in [
+        "tips", "pola hidup", "olahraga", "hidrasi", "pola makan", 
+        "makanan sehat", "susah tidur", "insomnia", "cara tidur", "kebugaran", "bugar"
+    ])
+    if is_wellness:
         reply = (
-            "Terima kasih informasinya. Apakah ada faktor yang membuat keluhan ini **terasa lebih berat** "
-            "(misal saat aktivitas atau posisi tertentu), atau hal yang membuatnya mereda?"
+            "Kunci menjaga tubuh tetap prima setiap hari sebenarnya sederhana:\n\n"
+            "1. **Hidrasi optimal:** Minum air putih 2–2.5 liter sehari.\n"
+            "2. **Kualitas tidur:** 7–8 jam per malam untuk regenerasi sel tubuh.\n"
+            "3. **Aktivitas fisik ringan:** Luangkan jalan kaki 20–30 menit secara rutin.\n"
+            "4. **Manajemen stres:** Ambil jeda napas dalam-dalam saat pekerjaan padat.\n\n"
+            "Apakah ada aspek kebiasaan sehat tertentu yang ingin kamu mulai tingkatkan minggu ini?"
+        )
+        return reply, "normal"
+
+    # Pre-anamnesis Conversation Loop for Symptoms
+    user_turns = len([m for m in st.session_state.chat_history if m["role"] == "user"])
+    
+    if user_turns <= 2:
+        reply = (
+            "Saya memahami rasa tidak nyamannya. Boleh ceritakan lebih detail, di bagian tubuh mana rasa sakit tersebut "
+            "paling terasa, dan sudah sejak kapan kamu merasakannya?"
         )
         return reply, "normal"
     elif user_turns == 3:
         reply = (
-            "Dicatat. Apakah kamu **sudah sempat meminum obat mandiri** (seperti obat warung atau herbal), "
-            "dan bagaimana hasilnya setelah minum obat tersebut?"
+            "Terima kasih atas informasinya. Apakah ada hal atau kondisi yang membuat keluhan ini **terasa semakin berat** "
+            "(misal saat bergerak, malam hari, atau setelah makan), atau hal yang membuatnya mereda?"
+        )
+        return reply, "normal"
+    elif user_turns == 4:
+        reply = (
+            "Sudah saya catat. Sebelum berkonsultasi, apakah kamu **sudah sempat minum obat mandiri** (seperti obat warung, herbal, atau resep lama), "
+            "dan bagaimana responnya di tubuhmu?"
         )
         return reply, "normal"
     else:
@@ -344,7 +523,7 @@ def process_chat_message(user_text):
         reply = (
             "Terima kasih banyak! 5 elemen riwayat keluhan kamu sudah **lengkap tercatat dan terenkripsi** ✅\n\n"
             "📋 **Ringkasan Pre-Anamnesis Anda:**\n"
-            f"- **Keluhan Utama:** {user_text}\n"
+            f"- **Keluhan:** {user_text}\n"
             "- **Status:** Diteruskan ke Antrean Poli Puskesmas Wonorejo\n"
             "- **SATUSEHAT:** Rekam Medis Elektronik tersinkronisasi (PMK No. 24/2022)\n\n"
             f"🎁 **Kamu mendapatkan +10 Poin Sehat!** Total poin: **{st.session_state.user_points} Pts**.\n"
@@ -498,16 +677,18 @@ with tabs[0]:
                         </div>
                         """, unsafe_allow_html=True)
 
-        # Quick symptom buttons
-        st.markdown("<div class='metric-label' style='margin-top: 8px;'>⚡ Contoh Keluhan Cepat:</div>", unsafe_allow_html=True)
-        qc1, qc2, qc3 = st.columns(3)
+        # Quick symptom & conversational buttons
+        st.markdown("<div class='metric-label' style='margin-top: 8px;'>⚡ Contoh Topik / Keluhan Cepat:</div>", unsafe_allow_html=True)
+        qc1, qc2, qc3, qc4 = st.columns(4)
         quick_msg = None
-        if qc1.button("⚠️ Nyeri Dada & Sesak", use_container_width=True):
-            quick_msg = "Dada saya nyeri hebat seperti ditindih dan sesak napas sejak 1 jam lalu ⚠️"
-        if qc2.button("🤕 Sakit Kepala 2 Hari", use_container_width=True):
+        if qc1.button("👋 Tips Bugar", use_container_width=True):
+            quick_msg = "Halo! Apa kabar hari ini? Minta tips menjaga kebugaran tubuh saat sibuk kerja dong 😊"
+        if qc2.button("💊 Minum Parasetamol", use_container_width=True):
+            quick_msg = "Apakah obat Parasetamol aman diminum sebelum makan, dan apa fungsi utamanya?"
+        if qc3.button("🤕 Sakit Kepala 2 Hari", use_container_width=True):
             quick_msg = "Sakit kepala berdenyut di bagian belakang sudah 2 hari, tambah berat kalau kurang tidur"
-        if qc3.button("💊 Respon Obat Mandiri", use_container_width=True):
-            quick_msg = "Sudah minum parasetamol 500mg satu kali, agak membaik tapi masih pusing"
+        if qc4.button("⚠️ Nyeri Dada (Darurat)", use_container_width=True):
+            quick_msg = "Dada saya nyeri hebat seperti ditindih dan sesak napas sejak 1 jam lalu ⚠️"
 
         # Chat input
         user_input = st.chat_input("Ketik keluhan atau jawab pertanyaan TanyaMed...") or quick_msg

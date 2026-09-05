@@ -18,7 +18,7 @@ export default function App() {
     {
       id: "msg-init-1",
       sender: "assistant",
-      text: "Halo! Saya **TanyaMed** 👋 Asisten triase & pre-anamnesis kesehatan Anda.\n\nBoleh ceritakan apa keluhan yang sedang kamu rasakan saat ini?",
+      text: "Halo! Apa kabar hari ini? Semoga kamu sehat dan harimu menyenangkan 😊\n\nAda yang bisa saya bantu atau ingin diobrolkan hari ini? Kamu bebas bertanya apa saja—mulai dari informasi kesehatan & gaya hidup, aturan minum obat, atau ceritakan jika ada keluhan tubuh yang sedang kamu rasakan ya!",
       time: "08:00",
       type: "normal",
     },
@@ -248,7 +248,7 @@ export default function App() {
       {
         id: `init-${Date.now()}`,
         sender: "assistant",
-        text: "Halo! Saya **TanyaMed** 👋 Asisten triase & pre-anamnesis kesehatan Anda.\n\nBoleh ceritakan apa keluhan yang sedang kamu rasakan saat ini?",
+        text: "Halo! Apa kabar hari ini? Semoga kamu sehat dan harimu menyenangkan 😊\n\nAda yang bisa saya bantu atau ingin diobrolkan hari ini? Kamu bebas bertanya apa saja—mulai dari informasi kesehatan & gaya hidup, aturan minum obat, atau ceritakan jika ada keluhan tubuh yang sedang kamu rasakan ya!",
         time: "08:00",
         type: "normal",
       },
